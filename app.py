@@ -1,9 +1,18 @@
 # import langchain dependencies
 from langchain.document_loaders import PyPDFLoader
-from langchain.indexes import VectorstoreIndexCreator
 from langchain.chains.retrieval_qa.base import RetrievalQA
-from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# import chromadd to store the vector database localy
+import chromadb
+from langchain_chroma import Chroma
+
+# create a persistent DB
+client = chromadb.PersistentClient(path="db/")
+
+# create a collection 
+
+collection = client.get_or_create_collection(name="Magic")
 
 # Strealit for UI
 import streamlit as st
@@ -11,6 +20,7 @@ import streamlit as st
 #Bring an interface
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 
 #Load api key
 load_dotenv()
@@ -21,16 +31,23 @@ llm = ChatOpenAI(model=model_id)
 # Bring the pdf loader
 @st.cache_resource
 def load_pdf():
+  
     pdf_name = 'pdf/MagicCompRules 20250207.pdf'
-    loaders = [PyPDFLoader(pdf_name)]
 
-    # create vector database
-    index = VectorstoreIndexCreator(
-        embedding= HuggingFaceEmbeddings(model_name='all-MiniLM-L12-v2'),
-        text_splitter=RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=0)
-    ).from_loaders(loaders)
+    loaders = PyPDFLoader(pdf_name)
+    document = loaders.load()
+
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=0)
+    chunked_documents = text_splitter.split_documents(document)
+
+    vectorSore = Chroma.from_documents(
+    documents=chunked_documents,
+    collection_name='Magic',
+    client=client,
+    embedding=OpenAIEmbeddings()
+)
     #return vector database
-    return index
+    return vectorSore
 
 # Load er on up
 index = load_pdf()
@@ -39,7 +56,7 @@ index = load_pdf()
 chain = RetrievalQA.from_chain_type(
     llm=llm,
     chain_type='stuff',
-    retriever=index.vectorstore.as_retriever(),
+    retriever= index.as_retriever(),
     input_key='question'
 )
 
