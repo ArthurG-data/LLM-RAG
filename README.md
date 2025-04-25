@@ -2,7 +2,7 @@
 
 ## About
 
-his project aims to build and deploy a locally hosted LLM (Large Language Model) specialized in answering Magic: The Gathering (MTG) rules-related questions using Retrieval-Augmented Generation (RAG).
+This project aims to build and deploy a locally hosted LLM (Large Language Model) specialized in answering Magic: The Gathering (MTG) rules-related questions using Retrieval-Augmented Generation (RAG).
 
 ## Objective
 
